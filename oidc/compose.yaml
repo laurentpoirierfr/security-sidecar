@@ -1,13 +1,22 @@
 services:
-  nginx-proxy-basic-auth:
-    build:
-      context: ./nginx-proxy
+  oauth2-proxy:
+    image: bitnami/oauth2-proxy:7.3.0
+    command:
+      - --http-address
+      - 0.0.0.0:4180 
     environment:
-    - FORWARD_HOST=echo-server
-    - FORWARD_PORT=80
-    - NGINX_PORT=8080
+      OAUTH2_PROXY_UPSTREAMS: http://web-app:8080/ 
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Okta
+      OAUTH2_PROXY_PROVIDER: oidc 
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${ISSUER}
+      OAUTH2_PROXY_CLIENT_ID: ${CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${CLIENT_SECRET}
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: true 
+      OAUTH2_PROXY_EMAIL_DOMAINS: '*' 
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:4180/oauth2/callback 
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET} 
     ports:
-      - 8080:8080
+      - 4180:4180 
 
   echo-server:
     image: ealen/echo-server:0.9.2
