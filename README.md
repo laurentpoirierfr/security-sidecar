@@ -11,6 +11,7 @@ Exemple de mise en place de sécurité d'accès web via nginx.
 
 ### oidc 
 
+* https://github.com/zmartzone/lua-resty-openidc
 * https://kevalnagda.github.io/configure-nginx-and-keycloak-to-enable-sso-for-proxied-applications
 * https://github.com/jirutka/nginx-oidc-njs
 * https://github.com/nginx-openid-connect/nginx-oidc-ping-identity
