@@ -1,7 +1,7 @@
 services:
   nginx-proxy-basic-auth:
     build:
-      context: ./nginx-proxy
+      context: ./basic-proxy
     environment:
     - FORWARD_HOST=echo-server
     - FORWARD_PORT=80
