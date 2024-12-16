@@ -1,0 +1,23 @@
+server_tokens off;
+
+server {
+    listen       ${NGINX_PORT};
+    server_name  localhost;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    location /api {
+        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/api;
+        proxy_read_timeout      900;
+    }
+
+    location /ops {
+        stub_status             on;
+        access_log              off;
+        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/ops;
+    }
+
+}

@@ -1,0 +1,30 @@
+server_tokens off;
+
+server {
+    listen       ${NGINX_PORT};
+    server_name  localhost;
+
+    location / {
+        auth_basic              off;
+
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    location /api {
+        auth_basic              "Restricted";
+        auth_basic_user_file    auth.htpasswd;
+
+        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/api;
+        proxy_read_timeout      900;
+    }
+
+    location /ops {
+        auth_basic              off;
+
+        stub_status             on;
+        access_log              off;
+        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/ops;
+    }
+
+}
