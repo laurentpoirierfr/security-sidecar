@@ -10,6 +10,8 @@ services:
     - NGINX_PORT=8080
     ports:
       - 8080:8080
+    volumes:
+      - ${PWD}/../html:/usr/share/nginx/html
 
   echo-server:
     image: ealen/echo-server:0.9.2
