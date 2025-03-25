@@ -1,0 +1,77 @@
+
+networks:
+  demo:
+    # Specify driver options
+    name: demo
+    driver: bridge
+
+services:
+
+  oauth2-proxy:
+    build:
+      context: ./oauth2-proxy
+    environment:
+    - FORWARD_HOST=echo-server
+    - FORWARD_PORT=80
+    - NGINX_PORT=8080
+    - OIDC_REDIRECT_URI_PATH=/redirect_uri
+    - OIDC_ACCEPT_NONE_ALG=true
+    # - OIDC_DISCOVERY=http://keycloak-server:8080/realms/myrealm/.well-known/openid-configuration
+    - OIDC_DISCOVERY=http://localhost:8080/realms/myrealm/.well-known/openid-configuration
+    - OIDC_CLIENT_ID=myclient
+    - OIDC_CLIENT_SECRET=myclient
+    - OIDC_REDIRECT_URI_SCHEME=http
+    - OIDC_LOGOUT_PATH=/logout
+    - OIDC_REDIRECT_AFTER_LOGOUT_URI=http://keycloak-server:8080/realms/myrealm/protocol/openid-connect/logout?redirect_uri=http://localhost/
+    volumes:
+      - ${PWD}/../html:/usr/share/nginx/html
+    ports:
+      - 9090:8080    
+    networks:
+      - demo
+
+  echo-server:
+    image: ealen/echo-server:0.9.2
+    ports:
+      - 3000:80
+    networks:
+      - demo
+
+
+  postgres:
+    image: postgres:15
+    container_name: keycloak-db
+    restart: always
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - demo
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak-server
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - ./realm.json:/opt/keycloak/data/import/realm.json
+    networks:
+      - demo
+
+volumes:
+  pg_data:

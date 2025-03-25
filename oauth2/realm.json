@@ -1,0 +1,67 @@
+{
+    "id": "myrealm",
+    "realm": "myrealm",
+    "enabled": true,
+    "clients": [
+      {
+        "clientId": "myclient",
+        "secret": "mysecret",
+        "enabled": true,
+        "protocol": "openid-connect",
+        "publicClient": false,
+        "directAccessGrantsEnabled": true
+      }
+    ],
+    "users": [
+      {
+        "username": "admin",
+        "enabled": true,
+        "credentials": [
+          {
+            "type": "password",
+            "value": "adminpassword"
+          }
+        ],
+        "realmRoles": ["admin"]
+      },
+      {
+        "username": "user",
+        "enabled": true,
+        "credentials": [
+          {
+            "type": "password",
+            "value": "userpassword"
+          }
+        ],
+        "realmRoles": ["user"]
+      },
+      {
+        "username": "superuser",
+        "enabled": true,
+        "credentials": [
+          {
+            "type": "password",
+            "value": "superpassword"
+          }
+        ],
+        "realmRoles": ["superuser"]
+      }
+    ],
+    "roles": {
+      "realm": [
+        {
+          "name": "admin",
+          "description": "Admin role"
+        },
+        {
+          "name": "user",
+          "description": "User role"
+        },
+        {
+          "name": "superuser",
+          "description": "Super User role"
+        }
+      ]
+    }
+  }
+  
