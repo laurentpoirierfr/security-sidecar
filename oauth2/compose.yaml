@@ -14,17 +14,19 @@ services:
     - FORWARD_HOST=echo-server
     - FORWARD_PORT=80
     - NGINX_PORT=8080
-    - OIDC_REDIRECT_URI_PATH=/redirect_uri
-    - OIDC_ACCEPT_NONE_ALG=true
-    # - OIDC_DISCOVERY=http://keycloak-server:8080/realms/myrealm/.well-known/openid-configuration
-    - OIDC_DISCOVERY=http://localhost:8080/realms/myrealm/.well-known/openid-configuration
-    - OIDC_CLIENT_ID=myclient
-    - OIDC_CLIENT_SECRET=myclient
-    - OIDC_REDIRECT_URI_SCHEME=http
-    - OIDC_LOGOUT_PATH=/logout
-    - OIDC_REDIRECT_AFTER_LOGOUT_URI=http://keycloak-server:8080/realms/myrealm/protocol/openid-connect/logout?redirect_uri=http://localhost/
+
+    - OIDC_CLIENT_ID="frontend"
+    - OIDC_CLIENT_CREDENTIALS="base64encoded-client-id:bXlzZWNyZXQ="
+
+    - OIDC_TOKEN_INTROSPECTION_URL=http://keycloak:8080/realms/demo/protocol/openid-connect/token/introspect
+    - OIDC_AUTH_URL=http://keycloak:8080/realms/demo/protocol/openid-connect/auth
+    - OIDC_USER_INFO_URL=http://localhost:8080/realms/myrealm/protocol/openid-connect/userinfo
+    - OIDC_LOGOUT_URL=http://keycloak:8080/realms/demo/protocol/openid-connect/logout?redirect_uri=http://localhost:9090
+
+
     volumes:
-      - ${PWD}/../html:/usr/share/nginx/html
+      - ${PWD}/../html:/usr/share/nginx/html/ui
+      - ${PWD}/index.html:/usr/share/nginx/html/index.html
     ports:
       - 9090:8080    
     networks:
@@ -69,7 +71,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./realm.json:/opt/keycloak/data/import/realm.json
+      - ./realm-demo.json:/opt/keycloak/data/import/realm-demo.json
     networks:
       - demo
 

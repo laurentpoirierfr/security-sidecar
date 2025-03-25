@@ -1,50 +1,73 @@
-server_tokens off;
+worker_processes auto;
 
-server {
-    listen       ${NGINX_PORT};
-    server_name  localhost;
+events {
+    worker_connections 1024;
+}
 
-    # I disabled caching so the browser won't cache the site.
-    expires           0;
-    add_header        Cache-Control private;
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
 
-    location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
+    server {
+        listen 80;
+        server_name localhost;
+
+        # Route publique
+        location / {
+            root /usr/share/nginx/html;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Proxy public
+        location /ops {
+            proxy_pass http://${FORWARD_HOST}:${FORWARD_PORT}/ops;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        # Configuration OAuth2 avec Keycloak
+        auth_request /_oauth2_token_introspection;
+        
+        location = /_oauth2_token_introspection {
+            internal;
+            proxy_pass ${OIDC_TOKEN_INTROSPECTION_URL};
+            proxy_pass_request_body off;
+            proxy_set_header Content-Length "";
+            proxy_set_header Content-Type "application/x-www-form-urlencoded";
+            proxy_set_header Authorization "Basic ${KEYCLOAK_CLIENT_CREDENTIALS}";
+            proxy_set_header X-Access-Token $http_authorization;
+        }
+
+        error_page 401 = @error401;
+        
+        location @error401 {
+            return 302 ${OIDC_AUTH_URL}
+              client_id=${KEYCLOAK_CLIENT_ID}&
+              redirect_uri=http://$host$request_uri&
+              response_type=code&
+              scope=openid;
+        }
+
+        # Application sécurisée
+        location /ui {
+            root /usr/share/nginx/html;
+            try_files $uri $uri/ /ui/index.html;
+            auth_request_set $user $upstream_http_x_auth_user;
+            proxy_set_header X-User $user;
+        }
+
+        # API sécurisée
+        location /api {
+            proxy_pass http://${FORWARD_HOST}:${FORWARD_PORT}/api;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            auth_request_set $token $http_authorization;
+            proxy_set_header Authorization $token;
+        }
+
+        # Logout
+        location /logout {
+            return 302 ${OIDC_LOGOUT_URL};
+        }
     }
-
-    location /api {
-        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/api;
-        proxy_read_timeout      900;
-
-        access_by_lua '
-         local opts = {
-           redirect_uri_path = "${OIDC_REDIRECT_URI_PATH}",
-           accept_none_alg = ${OIDC_ACCEPT_NONE_ALG},
-           discovery = "${OIDC_DISCOVERY}",
-           client_id = "${OIDC_CLIENT_ID}",
-           client_secret = "${OIDC_CLIENT_SECRET}",
-           redirect_uri_scheme = "${OIDC_REDIRECT_URI_SCHEME}",
-           logout_path = "${OIDC_LOGOUT_PATH}",
-           redirect_after_logout_uri = "${OIDC_REDIRECT_AFTER_LOGOUT_URI}",
-           redirect_after_logout_with_id_token_hint = false,
-           session_contents = {id_token=true}
-         }
-         -- call introspect for OAuth 2.0 Bearer Access Token validation
-         local res, err = require("resty.openidc").authenticate(opts)
-         if err then
-           ngx.status = 403
-           ngx.say(err)
-           ngx.exit(ngx.HTTP_FORBIDDEN)
-         end
-      ';
-      
-    }
-
-    location /ops {
-        stub_status             on;
-        access_log              off;
-        proxy_pass              http://${FORWARD_HOST}:${FORWARD_PORT}/ops;
-    }
-
 }
